@@ -16,7 +16,7 @@ Initial public release.
 - Automatic UV pipeline: Smart UV Project for unwrapped objects, dedicated non-destructive atlas UV layer, texel-density averaging, island packing with margin/rotation controls.
 - Atlas auto-resize (up to 8192) preserving texel density as object count grows.
 - Baked material generation with automatic Principled wiring (normal map, transparency, optional AO multiply, displacement), with replace / create-only / textures-only modes; replaced originals are preserved with a fake user.
-- Output options: PNG, TGA, TIFF, OpenEXR; 512–8192 resolutions; color depth and compression; overwrite / auto-rename / ask policies with a conflict dialog.
+- Output options: PNG, TGA, TIFF, OpenEXR; 512 to 8192 resolutions; color depth and compression; overwrite / auto-rename / ask policies with a conflict dialog.
 - Exporters: .blend copy, FBX, OBJ, glTF (GLB), in any combination.
 - Export-as-ZIP packaging with organized folder structure, optional README and license, optional loose-file cleanup, and open-folder-when-done.
 - Selected-to-active (high→low poly) baking with max ray distance and cage extrusion.
