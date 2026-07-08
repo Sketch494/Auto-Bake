@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto Bake for Blender. Scene to texture atlas in one click.</title>
+<meta name="description" content="Auto Bake is a free, open source Blender add-on that bakes entire scenes or selections into optimized texture atlases. 13 bake passes, automatic UVs, baked materials, exports and ZIP packaging. Blender 3.6 to latest.">
+<meta property="og:title" content="Auto Bake for Blender">
+<meta property="og:description" content="Bake entire scenes into optimized texture atlases in one click. Free and open source, Blender 3.6 to latest.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://autobake.sketch494.online">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;rect width='100' height='100' rx='18' fill='%23101216'/&gt;&lt;rect x='18' y='18' width='30' height='30' fill='%23e8720c'/&gt;&lt;rect x='52' y='18' width='30' height='30' fill='%232a2e37'/&gt;&lt;rect x='18' y='52' width='30' height='30' fill='%232a2e37'/&gt;&lt;rect x='52' y='52' width='30' height='30' fill='%23434a57'/&gt;&lt;/svg&gt;">
+<style>
+:root{
+  --bg:#0a0b0d;
+  --surface:#0f1114;
+  --surface-2:#14161b;
+  --line:rgba(255,255,255,.08);
+  --line-strong:rgba(255,255,255,.14);
+  --text:#e6e8ec;
+  --text-2:#a5adba;
+  --text-3:#69707d;
+  --accent:#e8720c;
+  --accent-hover:#f5892b;
+  --accent-ink:#160d03;
+  --ok:#59c17a;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--sans);
+  font-size:15.5px;line-height:1.65;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+::selection{background:rgba(232,114,12,.28)}
+.wrap{max-width:1024px;margin:0 auto;padding:0 28px}
+a{color:var(--text);text-decoration:none}
+p a,li a{border-bottom:1px solid var(--line-strong)}
+p a:hover,li a:hover{border-bottom-color:var(--accent)}
+.mono{font-family:var(--mono)}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:40;
+  background:rgba(10,11,13,.82);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);
+}
+.nav{display:flex;align-items:center;height:56px;gap:28px}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand .name{font-family:var(--mono);font-size:13.5px;font-weight:600;letter-spacing:.06em}
+.brand .ver{font-family:var(--mono);font-size:11px;color:var(--text-3)}
+.nav-links{display:flex;gap:22px;margin-left:auto;align-items:center}
+.nav-links>a{font-size:13.5px;color:var(--text-2)}
+.nav-links>a:hover{color:var(--text)}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;white-space:nowrap;
+  background:var(--accent);color:var(--accent-ink);
+  font-size:14px;font-weight:600;letter-spacing:.01em;
+  padding:9px 16px;border-radius:6px;border:1px solid transparent;
+  transition:background .12s ease;
+}
+.btn:hover{background:var(--accent-hover)}
+.btn.sm{padding:6px 12px;font-size:12.5px;border-radius:5px}
+.btn.ghost{
+  background:transparent;color:var(--text);
+  border:1px solid var(--line-strong);
+}
+.btn.ghost:hover{background:rgba(255,255,255,.05)}
+.btn svg{flex:none}
+
+/* ---------- hero ---------- */
+.hero{padding:96px 0 0}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,.9fr);gap:64px;align-items:center}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--text-3);margin-bottom:22px;
+}
+.eyebrow b{color:var(--accent);font-weight:600}
+h1{
+  font-size:clamp(34px,4.6vw,52px);line-height:1.06;
+  letter-spacing:-.031em;font-weight:700;text-wrap:balance;
+}
+.hero .sub{
+  color:var(--text-2);font-size:16.5px;max-width:46ch;
+  margin:22px 0 30px;
+}
+.cta-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.cta-row .btn{padding:12px 22px;font-size:15px}
+.file-meta{
+  font-family:var(--mono);font-size:12px;color:var(--text-3);
+  margin-top:18px;letter-spacing:.01em;
+}
+.file-meta span{color:var(--text-2)}
+.file-meta i{font-style:normal;color:var(--text-3);padding:0 7px}
+
+/* proof strip */
+.proof{
+  margin-top:72px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(3,1fr);
+}
+.proof>div{padding:22px 4px;border-left:1px solid var(--line)}
+.proof>div:first-child{border-left:none}
+.proof .k{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--text)}
+.proof .l{font-size:12.5px;color:var(--text-3);margin-top:2px}
+
+/* ---------- blender panel recreation ---------- */
+.panel-wrap{display:flex;flex-direction:column;gap:10px;min-width:0}
+.bpanel{
+  background:#1b1c20;border:1px solid #34353b;border-radius:8px;
+  font-size:12.5px;color:#c9cbd1;line-height:1.35;
+  box-shadow:0 30px 70px rgba(0,0,0,.5);
+  max-width:340px;width:100%;margin:0 auto;
+  font-family:var(--sans);
+}
+.bp-head{
+  display:flex;align-items:center;gap:7px;padding:9px 12px;
+  border-bottom:1px solid #2a2b30;color:#e3e4e8;font-weight:600;
+}
+.bp-caret{color:#8b8d94;font-size:9px}
+.bp-body{padding:11px 12px 13px}
+.bp-row{margin-bottom:9px}
+.bp-select{
+  background:#26272c;border:1px solid #3a3b41;border-radius:4px;
+  padding:5px 9px;display:flex;justify-content:space-between;color:#d6d7db;
+}
+.bp-select span:last-child{color:#7c7e86}
+.bp-bake{
+  background:#4a4b52;border:1px solid #5c5d64;border-radius:4px;
+  text-align:center;padding:9px 0;color:#f0f1f3;font-weight:600;
+}
+.bp-progress-box{
+  background:#212226;border:1px solid #313237;border-radius:5px;
+  padding:9px 10px;margin-bottom:9px;
+}
+.bp-bar{height:13px;background:#2c2d32;border-radius:3px;overflow:hidden;position:relative;margin-bottom:7px}
+.bp-bar i{display:block;height:100%;width:72%;background:#4772b3}
+.bp-bar em{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font-style:normal;font-size:10.5px;color:#e8e9ec;
+}
+.bp-status{color:#b9bbc2;font-size:11.5px}
+.bp-status.dim,.bp-status .dim{color:#77797f}
+.bp-cancel{
+  margin-top:8px;background:#3a3b41;border:1px solid #4a4b51;border-radius:4px;
+  text-align:center;padding:5px 0;color:#d8d9dd;font-size:11.5px;
+}
+.bp-subhead{
+  display:flex;align-items:center;gap:7px;color:#d9dade;
+  font-weight:600;padding:7px 0 6px;border-top:1px solid #2a2b30;margin-top:3px;
+}
+.bp-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.bp-toggle{
+  border-radius:4px;padding:5px 8px;text-align:center;
+  background:#26272c;border:1px solid #35363c;color:#9fa1a8;
+}
+.bp-toggle.on{background:#4772b3;border-color:#5a83c2;color:#fff}
+.bp-caption{
+  font-family:var(--mono);font-size:11px;color:var(--text-3);
+  text-align:center;letter-spacing:.02em;
+}
+
+/* ---------- sections ---------- */
+section{padding:88px 0;border-top:1px solid var(--line)}
+section:first-of-type{border-top:none}
+.sec-label{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--text-3);margin-bottom:14px;
+}
+h2{font-size:clamp(24px,3vw,32px);letter-spacing:-.022em;line-height:1.15;font-weight:700}
+.sec-intro{color:var(--text-2);margin-top:14px;max-width:58ch}
+
+/* features: editorial numbered list */
+.feat{
+  margin-top:48px;display:grid;grid-template-columns:1fr 1fr;
+  border-top:1px solid var(--line);
+}
+.feat>div{
+  padding:26px 32px 26px 0;border-bottom:1px solid var(--line);
+  display:grid;grid-template-columns:44px 1fr;gap:0 4px;
+}
+.feat>div:nth-child(odd){padding-right:44px}
+.feat>div:nth-child(even){padding-left:44px;border-left:1px solid var(--line)}
+.feat .idx{font-family:var(--mono);font-size:12px;color:var(--accent);padding-top:4px}
+.feat h3{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.feat p{color:var(--text-2);font-size:14px;margin-top:6px;line-height:1.6}
+
+/* pass chips */
+.pass-list{margin-top:44px;display:flex;flex-wrap:wrap;gap:8px}
+.pass{
+  font-family:var(--mono);font-size:12.5px;color:var(--text-2);
+  border:1px solid var(--line-strong);border-radius:5px;padding:6px 12px;
+}
+.pass.custom{border-style:dashed;color:var(--text-3)}
+
+/* log block */
+.log-frame{
+  margin-top:48px;border:1px solid var(--line-strong);border-radius:10px;
+  background:var(--surface);overflow:hidden;max-width:680px;
+}
+.log-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 16px;border-bottom:1px solid var(--line);
+  font-family:var(--mono);font-size:11.5px;color:var(--text-3);
+}
+.log-body{font-family:var(--mono);font-size:13px;padding:18px 20px;color:var(--text-2)}
+.log-body div{padding:2px 0}
+.log-body .ok::before{content:"done  ";color:var(--ok)}
+.log-body .run::before{content:"...   ";color:var(--accent)}
+.log-body .fin{color:var(--ok)}
+
+/* ---------- download ---------- */
+#download .dl-card{
+  margin-top:44px;border:1px solid var(--line-strong);border-radius:12px;
+  background:var(--surface);padding:40px;
+}
+.dl-top{display:flex;justify-content:space-between;gap:28px;align-items:flex-start;flex-wrap:wrap}
+.dl-top h3{font-size:20px;letter-spacing:-.015em}
+.dl-top .hint{color:var(--text-2);font-size:14px;margin-top:6px;max-width:44ch}
+.dl-files{margin-top:30px;border-top:1px solid var(--line)}
+.dl-file{
+  display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto;
+  gap:18px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line);
+}
+.dl-file .fname{font-family:var(--mono);font-size:13px}
+.dl-file .fdesc{font-size:13px;color:var(--text-3)}
+.dl-file .flink{
+  font-family:var(--mono);font-size:12.5px;color:var(--text-2);
+  border:1px solid var(--line-strong);border-radius:5px;padding:5px 12px;
+}
+.dl-file .flink:hover{border-color:var(--accent);color:var(--text)}
+.steps{margin-top:34px;display:grid;grid-template-columns:repeat(4,1fr);gap:26px}
+.step .sn{font-family:var(--mono);font-size:12px;color:var(--accent)}
+.step h4{font-size:14.5px;font-weight:600;margin:7px 0 5px}
+.step p{font-size:13px;color:var(--text-2);line-height:1.55}
+kbd{
+  font-family:var(--mono);font-size:11.5px;color:var(--text);
+  background:var(--surface-2);border:1px solid var(--line-strong);
+  border-bottom-width:2px;border-radius:4px;padding:1px 6px;
+}
+
+/* compatibility */
+.compat-row{margin-top:40px;display:flex;flex-wrap:wrap;gap:8px}
+.cv{
+  font-family:var(--mono);font-size:12.5px;padding:7px 13px;
+  border:1px solid var(--line-strong);border-radius:5px;color:var(--text-2);
+}
+.cv b{color:var(--ok);font-weight:600;margin-right:7px}
+.compat-note{margin-top:22px;font-size:13.5px;color:var(--text-3);max-width:62ch}
+
+/* faq */
+.faq{margin-top:40px;max-width:720px;border-top:1px solid var(--line)}
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{
+  cursor:pointer;list-style:none;display:flex;justify-content:space-between;
+  align-items:center;gap:20px;padding:18px 2px;font-weight:600;font-size:15px;
+}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{
+  content:"+";font-family:var(--mono);color:var(--text-3);font-size:16px;
+}
+.faq details[open] summary::after{content:"-"}
+.faq .a{padding:0 2px 20px;color:var(--text-2);font-size:14px;max-width:64ch}
+
+/* changelog */
+.chg{margin-top:40px;max-width:720px}
+.chg .row{display:flex;gap:18px;align-items:baseline}
+.chg .tag{font-family:var(--mono);font-size:13px;color:var(--text)}
+.chg .date{font-family:var(--mono);font-size:12px;color:var(--text-3)}
+.chg ul{margin:16px 0 0 2px;list-style:none}
+.chg li{
+  color:var(--text-2);font-size:14px;padding:4px 0 4px 20px;position:relative;
+}
+.chg li::before{
+  content:"";position:absolute;left:2px;top:13px;width:8px;height:1px;background:var(--text-3);
+}
+
+/* footer */
+footer{border-top:1px solid var(--line);padding:52px 0 60px;background:var(--surface)}
+.foot{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:36px}
+.foot .col h5{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--text-3);margin-bottom:14px;font-weight:500;
+}
+.foot .col a{display:block;font-size:13.5px;color:var(--text-2);padding:3px 0}
+.foot .col a:hover{color:var(--text)}
+.fine{font-size:12.5px;color:var(--text-3);line-height:1.7;max-width:34ch}
+.fine .name{font-family:var(--mono);color:var(--text-2)}
+
+/* responsive */
+@media (max-width:900px){
+  .hero-grid{grid-template-columns:1fr;gap:56px}
+  .bpanel{margin:0}
+  .feat{grid-template-columns:1fr}
+  .feat>div:nth-child(even){padding-left:0;border-left:none}
+  .feat>div:nth-child(odd){padding-right:0}
+  .steps{grid-template-columns:1fr 1fr}
+  .foot{grid-template-columns:1fr 1fr}
+}
+@media (max-width:600px){
+  .hero{padding-top:64px}
+  section{padding:64px 0}
+  .proof{grid-template-columns:1fr}
+  .proof>div{border-left:none;border-top:1px solid var(--line);padding:16px 2px}
+  .proof>div:first-child{border-top:none}
+  .dl-file{grid-template-columns:1fr;gap:6px}
+  #download .dl-card{padding:26px 22px}
+  .steps{grid-template-columns:1fr}
+  .nav-links>a.hide-sm{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top" aria-label="Auto Bake home">
+      <span class="name">AUTO&nbsp;BAKE</span>
+      <span class="ver">v1.0.0</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#features" class="hide-sm">Features</a>
+      <a href="#download" class="hide-sm">Install</a>
+      <a href="#faq" class="hide-sm">FAQ</a>
+      <a href="https://github.com/Sketch494/Auto-Bake" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a class="btn sm" href="https://github.com/Sketch494/Auto-Bake/releases/latest/download/auto_bake.zip">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ============ HERO ============ -->
+  <div class="hero wrap">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">Free, open source add-on for <b>Blender 3.6 to latest</b></div>
+        <h1>One click between your scene and game-ready textures.</h1>
+        <p class="sub">
+          Auto Bake unwraps, packs, bakes, rebuilds materials, exports and
+          archives. Thirteen bake passes into shared texture atlases, with
+          the whole pipeline restored to how you left it.
+        </p>
+        <div class="cta-row">
+          <a class="btn" href="https://github.com/Sketch494/Auto-Bake/releases/latest/download/auto_bake.zip">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8.5M4.5 7.5 8 11l3.5-3.5M2.5 13.5h11"/></svg>
+            Download for Blender
+          </a>
+          <a class="btn ghost" href="https://github.com/Sketch494/Auto-Bake" target="_blank" rel="noopener noreferrer">View source</a>
+        </div>
+        <div class="file-meta">
+          <span>auto_bake.zip</span><i>/</i>42&nbsp;KB<i>/</i>v1.0.0<i>/</i>GPL-3.0<i>/</i>Windows, macOS, Linux
+        </div>
+      </div>
+
+      <!-- Faithful recreation of the shipping panel -->
+      <div class="panel-wrap" aria-hidden="true">
+        <div class="bpanel">
+          <div class="bp-head"><span class="bp-caret">&#9660;</span> Auto Bake</div>
+          <div class="bp-body">
+            <div class="bp-row bp-select"><span>Selected Objects</span><span>&#9662;</span></div>
+            <div class="bp-progress-box">
+              <div class="bp-bar"><i></i><em>72%</em></div>
+              <div class="bp-status">Baking Roughness... (Crate_02)</div>
+              <div class="bp-status dim">~1m 20s remaining</div>
+              <div class="bp-cancel">Cancel</div>
+            </div>
+            <div class="bp-subhead"><span class="bp-caret">&#9660;</span> Bake Maps</div>
+            <div class="bp-grid">
+              <div class="bp-toggle on">Base Color</div>
+              <div class="bp-toggle on">Normal</div>
+              <div class="bp-toggle on">Roughness</div>
+              <div class="bp-toggle on">Metallic</div>
+              <div class="bp-toggle">Ambient Occlusion</div>
+              <div class="bp-toggle on">Emission</div>
+              <div class="bp-toggle">Alpha</div>
+              <div class="bp-toggle">Specular</div>
+            </div>
+            <div class="bp-subhead"><span class="bp-caret">&#9658;</span> Output</div>
+            <div class="bp-subhead" style="border-top:none;padding-top:0"><span class="bp-caret">&#9658;</span> Export</div>
+          </div>
+        </div>
+        <div class="bp-caption">3D View &#8250; Sidebar &#8250; Auto Bake</div>
+      </div>
+    </div>
+
+    <div class="proof">
+      <div><div class="k">13</div><div class="l">bake passes, plus custom Principled channels</div></div>
+      <div><div class="k">3.6 &#8594; 5.1</div><div class="l">tested against three Blender generations</div></div>
+      <div><div class="k">35</div><div class="l">automated checks pass on every tested build</div></div>
+    </div>
+  </div>
+
+  <!-- ============ FEATURES ============ -->
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-label">Capabilities</div>
+      <h2>The entire baking pipeline, done properly.</h2>
+      <p class="sec-intro">
+        Getting an asset game-ready is a dozen careful steps in a strict
+        order. Auto Bake runs all of them with the discipline of a tool
+        built for production work.
+      </p>
+
+      <div class="feat">
+        <div>
+          <span class="idx">01</span>
+          <div>
+            <h3>Shared texture atlases</h3>
+            <p>Every object lands in one atlas per map. Island scale is averaged first so texel density stays uniform, and the atlas grows up to 8192 as object counts rise.</p>
+          </div>
+        </div>
+        <div>
+          <span class="idx">02</span>
+          <div>
+            <h3>Exact channel captures</h3>
+            <p>Data channels bake through a temporary emission rig at one sample. Noise free, fast, and metallic surfaces keep their albedo instead of baking black.</p>
+          </div>
+        </div>
+        <div>
+          <span class="idx">03</span>
+          <div>
+            <h3>UVs handled for you</h3>
+            <p>Objects without UVs get a Smart UV Project automatically. Baking happens on a dedicated atlas layer, so the UVs you made by hand are never touched.</p>
+          </div>
+        </div>
+        <div>
+          <span class="idx">04</span>
+          <div>
+            <h3>Materials rebuilt, originals kept</h3>
+            <p>A clean Principled material is wired from the finished maps: normal node, alpha transparency, optional AO multiply. Replaced originals stay in the file.</p>
+          </div>
+        </div>
+        <div>
+          <span class="idx">05</span>
+          <div>
+            <h3>Export and archive</h3>
+            <p>Ship .blend, FBX, OBJ and glTF in any combination, sorted into textures and models folders, optionally packaged as a single ZIP with a README.</p>
+          </div>
+        </div>
+        <div>
+          <span class="idx">06</span>
+          <div>
+            <h3>Fails like good software</h3>
+            <p>Readable errors with a suggested fix, GPU to CPU fallback, a session log you can save, and every temporary change restored even when a bake dies.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pass-list">
+        <span class="pass">Base Color</span>
+        <span class="pass">Normal</span>
+        <span class="pass">Roughness</span>
+        <span class="pass">Metallic</span>
+        <span class="pass">Ambient Occlusion</span>
+        <span class="pass">Emission</span>
+        <span class="pass">Alpha</span>
+        <span class="pass">Specular</span>
+        <span class="pass">Glossiness</span>
+        <span class="pass">Height</span>
+        <span class="pass">Displacement</span>
+        <span class="pass">Combined</span>
+        <span class="pass custom">+ any Principled input</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PIPELINE ============ -->
+  <section>
+    <div class="wrap">
+      <div class="sec-label">Under the hood</div>
+      <h2>Press Bake. Read the log. Ship the ZIP.</h2>
+      <p class="sec-intro">
+        Every stage reports what it is doing, how far along it is, and how
+        long it expects to take. Cancel safely at any point.
+      </p>
+
+      <div class="log-frame">
+        <div class="log-head">
+          <span>autobake / session log</span>
+          <span>4 objects / 6 maps / 2048</span>
+        </div>
+        <div class="log-body">
+          <div class="ok">Preparing objects</div>
+          <div class="ok">Checking materials</div>
+          <div class="ok">Creating UVs (Smart UV Project: Cone)</div>
+          <div class="ok">Packing UV islands</div>
+          <div class="ok">Creating bake images</div>
+          <div class="ok">Baking Base Color</div>
+          <div class="ok">Baking Normal</div>
+          <div class="run">Baking Roughness (Crate_02)</div>
+          <div style="color:var(--text-3)">&nbsp;</div>
+          <div class="fin">Finished successfully &#8594; AutoBake_Export.zip</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DOWNLOAD ============ -->
+  <section id="download">
+    <div class="wrap">
+      <div class="sec-label">Download</div>
+      <h2>Install in about a minute.</h2>
+
+      <div class="dl-card">
+        <div class="dl-top">
+          <div>
+            <h3>Auto Bake v1.0.0</h3>
+            <p class="hint">One ZIP for every supported Blender. Do not extract it, Blender installs it as-is.</p>
+          </div>
+          <a class="btn" href="https://github.com/Sketch494/Auto-Bake/releases/latest/download/auto_bake.zip">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8.5M4.5 7.5 8 11l3.5-3.5M2.5 13.5h11"/></svg>
+            Download auto_bake.zip
+          </a>
+        </div>
+
+        <div class="dl-files">
+          <div class="dl-file">
+            <span class="fname">auto_bake.zip</span>
+            <span class="fdesc">Universal add-on ZIP, Blender 3.6 and newer</span>
+            <a class="flink" href="https://github.com/Sketch494/Auto-Bake/releases/latest/download/auto_bake.zip">download</a>
+          </div>
+          <div class="dl-file">
+            <span class="fname">auto_bake-1.0.0-extension.zip</span>
+            <span class="fdesc">Extension format for Blender 4.2 and newer</span>
+            <a class="flink" href="https://github.com/Sketch494/Auto-Bake/releases/latest/download/auto_bake-1.0.0-extension.zip">download</a>
+          </div>
+          <div class="dl-file">
+            <span class="fname">Source code</span>
+            <span class="fdesc">GPL-3.0, build and test scripts included</span>
+            <a class="flink" href="https://github.com/Sketch494/Auto-Bake" target="_blank" rel="noopener noreferrer">github</a>
+          </div>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <span class="sn">STEP 1</span>
+            <h4>Download the ZIP</h4>
+            <p>Grab auto_bake.zip above and leave it zipped.</p>
+          </div>
+          <div class="step">
+            <span class="sn">STEP 2</span>
+            <h4>Install it</h4>
+            <p>Edit &#8250; Preferences &#8250; Add-ons &#8250; Install, then pick the ZIP.</p>
+          </div>
+          <div class="step">
+            <span class="sn">STEP 3</span>
+            <h4>Enable it</h4>
+            <p>Tick the checkbox next to Auto Bake in the add-on list.</p>
+          </div>
+          <div class="step">
+            <span class="sn">STEP 4</span>
+            <h4>Bake</h4>
+            <p>Select objects, press <kbd>N</kbd>, open the Auto Bake tab, hit Bake.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="compat-row">
+        <span class="cv"><b>&#10003;</b>3.6 LTS, tested</span>
+        <span class="cv"><b>&#10003;</b>4.0</span>
+        <span class="cv"><b>&#10003;</b>4.1</span>
+        <span class="cv"><b>&#10003;</b>4.2 LTS, tested</span>
+        <span class="cv"><b>&#10003;</b>4.3 to 4.5</span>
+        <span class="cv"><b>&#10003;</b>5.x, tested</span>
+      </div>
+      <p class="compat-note">
+        A compatibility layer bridges the API differences between Blender
+        generations, including the Principled BSDF socket renames from 4.0
+        and the EEVEE material changes from 4.2.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ FAQ ============ -->
+  <section id="faq">
+    <div class="wrap">
+      <div class="sec-label">Questions</div>
+      <h2>Short answers to fair questions.</h2>
+
+      <div class="faq">
+        <details open>
+          <summary>Is it really free?</summary>
+          <div class="a">Yes. Auto Bake is licensed GPL-3.0-or-later and the source is public. Anything you bake with it belongs entirely to you, including commercial work.</div>
+        </details>
+        <details>
+          <summary>Will it work with my Blender version?</summary>
+          <div class="a">Auto Bake supports Blender 3.6 LTS through the latest stable release. Each release is verified by an automated suite that installs the add-on and runs a full bake inside real Blender 3.6, 4.2 and 5.x builds.</div>
+        </details>
+        <details>
+          <summary>Does it change my scene?</summary>
+          <div class="a">Baking happens on a dedicated atlas UV layer and through temporary nodes that are removed afterwards. If you choose to replace materials, the originals are kept in the file with a fake user, so nothing is lost.</div>
+        </details>
+        <details>
+          <summary>Where do my textures end up?</summary>
+          <div class="a">In the export folder you choose, sorted into textures and models subfolders, named like AutoBake_BaseColor.png. Enable ZIP export and everything is also packaged into a single archive.</div>
+        </details>
+        <details>
+          <summary>GPU or CPU?</summary>
+          <div class="a">Either. Auto Bake uses your GPU when one is available and falls back to CPU cleanly when it is not. Channel passes render at one sample, so even CPU bakes stay quick.</div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHANGELOG ============ -->
+  <section id="changelog">
+    <div class="wrap">
+      <div class="sec-label">Changelog</div>
+      <h2>Release history.</h2>
+
+      <div class="chg">
+        <div class="row">
+          <span class="tag">v1.0.0</span>
+          <span class="date">2026-07-08</span>
+        </div>
+        <ul>
+          <li>Initial release: 12 built-in bake passes plus custom Principled channels</li>
+          <li>Shared atlases with texel density averaging and automatic resizing</li>
+          <li>Smart UV Project for unwrapped objects, non-destructive atlas layer</li>
+          <li>Baked material generation with replace, copy-only and textures-only modes</li>
+          <li>.blend, FBX, OBJ and glTF export with organized ZIP packaging</li>
+          <li>Confirmation dialogs, live progress with time estimates, session logging</li>
+          <li>Verified on Blender 3.6.23, 4.2.22 and 5.1.2</li>
+        </ul>
+        <p style="margin-top:18px;font-size:13.5px">
+          <a href="https://github.com/Sketch494/Auto-Bake/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">Full changelog on GitHub</a>
+        </p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div class="col">
+      <div class="brand" style="margin-bottom:14px">
+        <span class="name mono" style="font-size:13px;font-weight:600;letter-spacing:.06em">AUTO&nbsp;BAKE</span>
+      </div>
+      <p class="fine">
+        Built by <span class="name">Sketch494</span>.<br>
+        Licensed GPL-3.0-or-later.<br>
+        Your baked assets are yours, always.
+      </p>
+    </div>
+    <div class="col">
+      <h5>Project</h5>
+      <a href="https://github.com/Sketch494/Auto-Bake" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="https://github.com/Sketch494/Auto-Bake/releases" target="_blank" rel="noopener noreferrer">Releases</a>
+      <a href="https://github.com/Sketch494/Auto-Bake/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">Changelog</a>
+    </div>
+    <div class="col">
+      <h5>Resources</h5>
+      <a href="https://github.com/Sketch494/Auto-Bake/blob/main/docs/USER_GUIDE.md" target="_blank" rel="noopener noreferrer">User guide</a>
+      <a href="https://github.com/Sketch494/Auto-Bake/issues" target="_blank" rel="noopener noreferrer">Report an issue</a>
+      <a href="https://github.com/Sketch494/Auto-Bake/blob/main/tests/test_headless.py" target="_blank" rel="noopener noreferrer">Test suite</a>
+    </div>
+    <div class="col">
+      <h5>Legal</h5>
+      <a href="https://github.com/Sketch494/Auto-Bake/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a>
+      <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer">GPL-3.0 text</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
