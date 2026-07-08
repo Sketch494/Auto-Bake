@@ -1,0 +1,42 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build add-on ZIPs
+        id: build
+        run: |
+          python3 scripts/build_release.py
+          VERSION=$(python3 -c "import ast,re; s=open('auto_bake/__init__.py').read(); print('.'.join(map(str, ast.literal_eval(re.search(r'bl_info\s*=\s*(\{.*?^\})', s, re.S|re.M).group(1))['version'])))")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          cp "dist/auto_bake-$VERSION.zip" dist/auto_bake.zip
+          ls -la dist/
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.build.outputs.version }}
+          name: Auto Bake v${{ steps.build.outputs.version }}
+          body_path: .github/RELEASE_NOTES.md
+          generate_release_notes: true
+          files: |
+            dist/auto_bake.zip
+            dist/auto_bake-${{ steps.build.outputs.version }}.zip
+            dist/auto_bake-${{ steps.build.outputs.version }}-extension.zip
