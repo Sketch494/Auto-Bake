@@ -1,0 +1,18 @@
+schema_version = "1.0.0"
+
+# Blender Extension manifest (Blender 4.2+).
+# Blender 3.6 - 4.1 ignore this file and use bl_info from __init__.py instead.
+id = "auto_bake"
+version = "1.0.0"
+name = "Auto Bake"
+tagline = "Bake scenes or selections into optimized texture atlases"
+maintainer = "Sketch494"
+type = "add-on"
+
+website = "https://autobake.sketch494.online"
+tags = ["Material", "UV", "Render"]
+
+blender_version_min = "4.2.0"
+
+license = ["SPDX:GPL-3.0-or-later"]
+copyright = ["2026 Sketch494"]
